@@ -81,7 +81,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // CRITICAL FIX: Fallback to DEFAULT_SETTINGS if forms is empty to prevent crash
-  const activeForm = forms.find(f => f.id === currentFormId) || forms[0];
+  // Safe access to forms array
+  const safeForms = Array.isArray(forms) ? forms : [];
+  const activeForm = safeForms.find(f => f.id === currentFormId) || safeForms[0];
   
   // Ensure we always have valid settings to render, even if activeForm is undefined
   const safeInitialSettings: AppSettings = activeForm || {
@@ -104,7 +106,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [selectedFilterIds, setSelectedFilterIds] = useState<string[]>([]);
   // Init filters with ALL forms + consolidated
   useEffect(() => {
-    const allIds = forms.map(f => f.id).concat(['consolidated']);
+    const allIds = safeForms.map(f => f.id).concat(['consolidated']);
     setSelectedFilterIds(allIds);
   }, [forms]);
 
@@ -200,7 +202,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const selectAllFilters = () => {
-    const allIds = forms.map(f => f.id).concat(['consolidated']);
+    const allIds = safeForms.map(f => f.id).concat(['consolidated']);
     setSelectedFilterIds(allIds);
   };
 
@@ -236,7 +238,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const getFormName = (formId: string) => {
     if (formId === 'consolidated') return 'Leads Consolidados (Sem formulário)';
-    return forms.find(f => f.id === formId)?.title || 'Desconhecido';
+    return safeForms.find(f => f.id === formId)?.title || 'Desconhecido';
   };
 
   const exportCSV = () => {
@@ -418,7 +420,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
              >
                <option value="all">📂 Visão Geral (Todos)</option>
                <optgroup label="Meus Formulários">
-                 {forms.map(f => (
+                 {safeForms.map(f => (
                    <option key={f.id} value={f.id}>{f.title}</option>
                  ))}
                </optgroup>
@@ -555,7 +557,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 className="w-full bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded text-sm"
              >
                <option value="all">📂 Visão Geral (Todos)</option>
-               {forms.map(f => (
+               {safeForms.map(f => (
                  <option key={f.id} value={f.id}>{f.title}</option>
                ))}
           </select>
@@ -609,7 +611,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       {isAllForms ? 'Formulários Ativos' : 'Arquivo Configurado'}
                     </p>
                     <h3 className="text-lg font-bold truncate max-w-[200px]">
-                      {isAllForms ? forms.length : activeForm?.fileName || '-'}
+                      {isAllForms ? safeForms.length : activeForm?.fileName || '-'}
                     </h3>
                   </div>
                 </div>
@@ -671,7 +673,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             </label>
                             
                             {/* Forms Options */}
-                            {forms.map(f => (
+                            {safeForms.map(f => (
                               <label key={f.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
                                <input 
                                  type="checkbox" 
@@ -782,7 +784,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <span className="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full font-bold">Consolidado</span>
                              ) : (
                                 <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                                   {forms.find(f => f.id === lead.formId)?.title || "Desconhecido"}
+                                   {safeForms.find(f => f.id === lead.formId)?.title || "Desconhecido"}
                                 </span>
                              )}
                         </td>
@@ -976,6 +978,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             className="w-full text-sm border-gray-300 rounded-lg shadow-sm p-2 border" 
                           />
                        </div>
+                       {/* Helper Text */}
+                       <p className="text-xs text-gray-400 mt-2">
+                          Recomendado: 1920x1080px (16:9) ou 800x600px (4:3).<br/>
+                          Máximo: 2MB. Formatos: PNG, JPG, WEBP.
+                       </p>
                     </div>
                   </div>
                 </div>
@@ -1008,6 +1015,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             />
                          </div>
                        </div>
+                       {/* Helper Text */}
+                       <p className="text-xs text-gray-400 mt-2">
+                          Recomendado: Fundo transparente. Altura aprox. 100px.<br/>
+                          Máximo: 500KB. Formatos: PNG, SVG.
+                       </p>
                     </div>
                   </div>
                 </div>
@@ -1116,9 +1128,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                </p>
                <button 
                    onClick={() => setIsDeleteFormModalOpen(true)}
-                   disabled={forms.length <= 1}
+                   disabled={safeForms.length <= 1}
                    className="px-4 py-2 bg-white text-red-600 border border-red-200 hover:bg-red-100 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                   title={forms.length <= 1 ? "Você precisa ter pelo menos um formulário." : ""}
+                   title={safeForms.length <= 1 ? "Você precisa ter pelo menos um formulário." : ""}
                  >
                    Excluir Formulário "{activeForm?.title}"
                </button>

@@ -28,23 +28,30 @@ const App: React.FC = () => {
   }, []);
 
   const loadUserData = (userId: string) => {
-    let userForms = storage.getForms(userId);
-    
-    // AUTO-RECOVERY: If no forms found (empty array), create default immediately
-    // This prevents the "White Screen of Death" caused by activeForm being undefined
-    if (userForms.length === 0) {
-       console.warn("No forms found for user. Auto-creating default form to prevent crash.");
-       const newForm = storage.createForm(userId, "Meu Primeiro Formulário");
-       userForms = [newForm];
+    try {
+      let userForms = storage.getForms(userId);
+      
+      // AUTO-RECOVERY: If no forms found (empty array), create default immediately
+      // This prevents the "White Screen of Death" caused by activeForm being undefined
+      if (userForms.length === 0) {
+         console.warn("No forms found for user. Auto-creating default form to prevent crash.");
+         const newForm = storage.createForm(userId, "Meu Primeiro Formulário");
+         userForms = [newForm];
+      }
+
+      setForms(userForms);
+      
+      // Select first form by default if not 'all', or keep 'all' if desired
+      // For better UX, let's default to 'all' to show dashboard overview
+      setCurrentFormId('all');
+
+      setLeads(storage.getAllLeads(userId));
+    } catch (e) {
+      console.error("Critical error loading user data:", e);
+      // Fallback to prevent white screen
+      setForms([]);
+      setLeads([]);
     }
-
-    setForms(userForms);
-    
-    // Select first form by default if not 'all', or keep 'all' if desired
-    // For better UX, let's default to 'all' to show dashboard overview
-    setCurrentFormId('all');
-
-    setLeads(storage.getAllLeads(userId));
   };
 
   // --- FORM HANDLERS ---

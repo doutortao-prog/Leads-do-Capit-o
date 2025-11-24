@@ -9,11 +9,21 @@ const KEYS = {
 // Helper to generate keys specific to a user
 const getUserKey = (uid: string, type: 'settings' | 'leads' | 'forms') => `saas_${uid}_${type}`;
 
+// Helper to safely parse JSON without crashing
+const safeParse = <T>(json: string | null, fallback: T): T => {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    console.error("Error parsing storage data:", e);
+    return fallback;
+  }
+};
+
 // --- AUTH & USERS ---
 
 export const getUsers = (): User[] => {
-  const stored = localStorage.getItem(KEYS.USERS);
-  return stored ? JSON.parse(stored) : [];
+  return safeParse(localStorage.getItem(KEYS.USERS), []);
 };
 
 export const registerUser = (name: string, email: string, password: string): User | null => {
@@ -73,7 +83,7 @@ export const migrateLegacySettings = (userId: string) => {
   
   if (!existingForms) {
     const oldSettings = localStorage.getItem(oldSettingsKey);
-    const settingsToUse = oldSettings ? JSON.parse(oldSettings) : DEFAULT_SETTINGS;
+    const settingsToUse = safeParse(oldSettings, DEFAULT_SETTINGS);
     
     const initialForm: FormConfig = {
       ...settingsToUse,
@@ -87,11 +97,7 @@ export const migrateLegacySettings = (userId: string) => {
 };
 
 export const getForms = (userId: string): FormConfig[] => {
-  const stored = localStorage.getItem(getUserKey(userId, 'forms'));
-  if (stored) return JSON.parse(stored);
-  
-  // Fallback if no forms exist (shouldn't happen due to registration/migration)
-  return []; 
+  return safeParse(localStorage.getItem(getUserKey(userId, 'forms')), []);
 };
 
 export const getFormById = (userId: string, formId: string): FormConfig | undefined => {
@@ -145,7 +151,7 @@ export const deleteForm = (userId: string, formId: string): void => {
 // Get ALL leads for a user (across all forms)
 export const getAllLeads = (userId: string): Lead[] => {
   const stored = localStorage.getItem(getUserKey(userId, 'leads'));
-  let leads: Lead[] = stored ? JSON.parse(stored) : [];
+  let leads: Lead[] = safeParse(stored, []);
   
   // Legacy migration for leads without formId
   const forms = getForms(userId);
