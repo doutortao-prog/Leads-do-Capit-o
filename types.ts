@@ -36,6 +36,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  password: string; // In a real app, this would be hashed
+  // Password removed for security in frontend state
   createdAt: string;
 }
