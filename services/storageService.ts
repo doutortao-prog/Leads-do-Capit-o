@@ -6,6 +6,11 @@ const KEYS = {
   CURRENT_SESSION: 'saas_session_uid'
 };
 
+// Internal interface to handle passwords in storage only
+interface StoredUser extends User {
+  password: string;
+}
+
 // Helper to generate keys specific to a user
 const getUserKey = (uid: string, type: 'settings' | 'leads' | 'forms') => `saas_${uid}_${type}`;
 
@@ -22,21 +27,22 @@ const safeParse = <T>(json: string | null, fallback: T): T => {
 
 // --- AUTH & USERS ---
 
-export const getUsers = (): User[] => {
+// Internal use only
+const getStoredUsers = (): StoredUser[] => {
   return safeParse(localStorage.getItem(KEYS.USERS), []);
 };
 
 export const registerUser = (name: string, email: string, password: string): User | null => {
-  const users = getUsers();
+  const users = getStoredUsers();
   if (users.find(u => u.email === email)) {
     return null; // User already exists
   }
 
-  const newUser: User = {
+  const newUser: StoredUser = {
     id: crypto.randomUUID(),
     name,
     email,
-    password,
+    password, // Saved internally
     createdAt: new Date().toISOString()
   };
 
@@ -46,17 +52,22 @@ export const registerUser = (name: string, email: string, password: string): Use
   // Initialize default form for this user
   createForm(newUser.id, "Meu Primeiro Formulário");
 
-  return newUser;
+  // Return sanitized user (without password)
+  const { password: _, ...sanitizedUser } = newUser;
+  return sanitizedUser;
 };
 
 export const loginUser = (email: string, pass: string): User | null => {
-  const users = getUsers();
+  const users = getStoredUsers();
   const user = users.find(u => u.email === email && u.password === pass);
   if (user) {
     localStorage.setItem(KEYS.CURRENT_SESSION, user.id);
     // Migration check on login
     migrateLegacySettings(user.id);
-    return user;
+    
+    // Return sanitized user
+    const { password: _, ...sanitizedUser } = user;
+    return sanitizedUser;
   }
   return null;
 };
@@ -68,8 +79,14 @@ export const logoutUser = (): void => {
 export const getCurrentUser = (): User | null => {
   const uid = localStorage.getItem(KEYS.CURRENT_SESSION);
   if (!uid) return null;
-  const users = getUsers();
-  return users.find(u => u.id === uid) || null;
+  const users = getStoredUsers();
+  const user = users.find(u => u.id === uid);
+  
+  if (user) {
+    const { password: _, ...sanitizedUser } = user;
+    return sanitizedUser;
+  }
+  return null;
 };
 
 // --- FORMS MANAGEMENT ---
@@ -200,7 +217,7 @@ export const deleteMultipleLeads = (userId: string, leadIds: string[]): void => 
 // --- INITIALIZATION ---
 
 export const initializeStorage = () => {
-  const users = getUsers();
+  const users = getStoredUsers();
   const adminEmail = "doutortao@gmail.com.br";
   
   // Seed admin if not exists
