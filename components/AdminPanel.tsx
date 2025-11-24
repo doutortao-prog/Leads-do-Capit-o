@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { AppSettings, Lead, User, FormConfig } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { SYSTEM_CONFIG } from '../constants';
+import { SYSTEM_CONFIG, DEFAULT_SETTINGS } from '../constants';
 
 // Extending window for external libraries loaded via CDN
 declare global {
@@ -80,9 +80,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activeTab, setActiveTab] = useState<'dashboard' | 'editor' | 'settings'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // Local Settings state for the Editor - Initialized with current form settings
-  const activeForm = forms.find(f => f.id === currentFormId);
-  const [localSettings, setLocalSettings] = useState<AppSettings>(activeForm || forms[0]);
+  // CRITICAL FIX: Fallback to DEFAULT_SETTINGS if forms is empty to prevent crash
+  const activeForm = forms.find(f => f.id === currentFormId) || forms[0];
+  
+  // Ensure we always have valid settings to render, even if activeForm is undefined
+  const safeInitialSettings: AppSettings = activeForm || {
+    ...DEFAULT_SETTINGS,
+    id: 'temp',
+    title: 'Carregando...',
+    createdAt: new Date().toISOString()
+  } as unknown as FormConfig;
+
+  const [localSettings, setLocalSettings] = useState<AppSettings>(safeInitialSettings);
   
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -498,7 +507,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
              
              {/* Small status indicator */}
              <div className="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600 max-w-[100px] truncate">
-                {isAllForms ? 'Geral' : activeForm?.title}
+                {isAllForms ? 'Geral' : activeForm?.title || 'Selecionar'}
              </div>
           </div>
 
@@ -507,21 +516,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
              <div className="absolute top-full left-0 w-full bg-white border-b shadow-xl p-4 flex flex-col gap-2 z-40 animate-fade-in">
                  <button 
                     onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-50'}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-50'} text-left`}
                  >
                     <LayoutDashboard size={20} /> Dashboard
                  </button>
                  <button 
                     disabled={isAllForms}
                     onClick={() => { setActiveTab('editor'); setIsMobileMenuOpen(false); }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'editor' ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-50'} ${isAllForms ? 'opacity-50' : ''}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'editor' ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-50'} ${isAllForms ? 'opacity-50' : ''} text-left`}
                  >
                     <Edit3 size={20} /> Editor Visual
                  </button>
                  <button 
                     disabled={isAllForms}
                     onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'settings' ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-50'} ${isAllForms ? 'opacity-50' : ''}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'settings' ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-50'} ${isAllForms ? 'opacity-50' : ''} text-left`}
                  >
                     <Settings size={20} /> Configurações
                  </button>
@@ -570,7 +579,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <p className="text-gray-500">
                    {isAllForms 
                      ? "Visão unificada de todas as suas campanhas." 
-                     : `Gerenciando: ${activeForm?.title}`}
+                     : `Gerenciando: ${activeForm?.title || 'Formulário'}`}
                 </p>
               </div>
             </header>
@@ -600,7 +609,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       {isAllForms ? 'Formulários Ativos' : 'Arquivo Configurado'}
                     </p>
                     <h3 className="text-lg font-bold truncate max-w-[200px]">
-                      {isAllForms ? forms.length : activeForm?.fileName}
+                      {isAllForms ? forms.length : activeForm?.fileName || '-'}
                     </h3>
                   </div>
                 </div>
@@ -880,7 +889,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Editor Visual</h1>
-                <p className="text-gray-500">Editando: <span className="font-semibold text-indigo-600">{activeForm?.title}</span></p>
+                <p className="text-gray-500">Editando: <span className="font-semibold text-indigo-600">{activeForm?.title || 'Formulário'}</span></p>
               </div>
               <button onClick={handleSaveSettings} className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm w-full md:w-auto justify-center">
                 <Save className="w-4 h-4" /> Salvar Alterações
@@ -895,8 +904,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome Interno do Formulário</label>
                   <input 
                     type="text" 
-                    value={activeForm?.title} 
-                    onChange={e => onUpdateForm({...activeForm!, title: e.target.value})}
+                    value={activeForm?.title || ''} 
+                    onChange={e => activeForm && onUpdateForm({...activeForm, title: e.target.value})}
                     className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
                   />
                   <p className="text-xs text-gray-400 mt-1">Este nome aparece apenas no seu painel.</p>
@@ -1133,7 +1142,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               {/* Only show form warning if creating new */}
               {!editingLead && (
                  <div className="text-xs text-indigo-600 bg-indigo-50 p-2 rounded mb-2">
-                    Será adicionado ao formulário: <b>{activeForm?.title}</b>
+                    Será adicionado ao formulário: <b>{activeForm?.title || 'Selecionado'}</b>
                  </div>
               )}
 

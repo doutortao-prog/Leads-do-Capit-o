@@ -28,12 +28,20 @@ const App: React.FC = () => {
   }, []);
 
   const loadUserData = (userId: string) => {
-    const userForms = storage.getForms(userId);
+    let userForms = storage.getForms(userId);
+    
+    // AUTO-RECOVERY: If no forms found (empty array), create default immediately
+    // This prevents the "White Screen of Death" caused by activeForm being undefined
+    if (userForms.length === 0) {
+       console.warn("No forms found for user. Auto-creating default form to prevent crash.");
+       const newForm = storage.createForm(userId, "Meu Primeiro Formulário");
+       userForms = [newForm];
+    }
+
     setForms(userForms);
     
     // Select first form by default if not 'all', or keep 'all' if desired
-    // For better UX, let's default to 'all' to show dashboard overview, 
-    // unless user has no forms (which shouldn't happen)
+    // For better UX, let's default to 'all' to show dashboard overview
     setCurrentFormId('all');
 
     setLeads(storage.getAllLeads(userId));
@@ -60,7 +68,15 @@ const App: React.FC = () => {
     if (currentUser) {
       storage.deleteForm(currentUser.id, formId);
       const updatedForms = storage.getForms(currentUser.id);
-      setForms(updatedForms);
+      
+      // Auto-recovery if user deletes their last form
+      if (updatedForms.length === 0) {
+         const newForm = storage.createForm(currentUser.id, "Novo Formulário");
+         setForms([newForm]);
+      } else {
+         setForms(updatedForms);
+      }
+      
       setCurrentFormId('all'); // Reset to all
       // Important: Reload leads because they might have been migrated to 'consolidated'
       setLeads(storage.getAllLeads(currentUser.id));
