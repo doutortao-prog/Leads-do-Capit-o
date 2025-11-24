@@ -1,6 +1,6 @@
 export interface Lead {
   id: string;
-  formId: string; // New: Links lead to specific form
+  formId: string; // Links lead to specific form
   name: string;
   email: string;
   whatsapp: string;
