@@ -1,0 +1,205 @@
+import { AppSettings, Lead, User, FormConfig } from '../types';
+import { DEFAULT_SETTINGS } from '../constants';
+
+const KEYS = {
+  USERS: 'saas_users',
+  CURRENT_SESSION: 'saas_session_uid'
+};
+
+// Helper to generate keys specific to a user
+const getUserKey = (uid: string, type: 'settings' | 'leads' | 'forms') => `saas_${uid}_${type}`;
+
+// --- AUTH & USERS ---
+
+export const getUsers = (): User[] => {
+  const stored = localStorage.getItem(KEYS.USERS);
+  return stored ? JSON.parse(stored) : [];
+};
+
+export const registerUser = (name: string, email: string, password: string): User | null => {
+  const users = getUsers();
+  if (users.find(u => u.email === email)) {
+    return null; // User already exists
+  }
+
+  const newUser: User = {
+    id: crypto.randomUUID(),
+    name,
+    email,
+    password,
+    createdAt: new Date().toISOString()
+  };
+
+  users.push(newUser);
+  localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+  
+  // Initialize default form for this user
+  createForm(newUser.id, "Meu Primeiro Formulário");
+
+  return newUser;
+};
+
+export const loginUser = (email: string, pass: string): User | null => {
+  const users = getUsers();
+  const user = users.find(u => u.email === email && u.password === pass);
+  if (user) {
+    localStorage.setItem(KEYS.CURRENT_SESSION, user.id);
+    // Migration check on login
+    migrateLegacySettings(user.id);
+    return user;
+  }
+  return null;
+};
+
+export const logoutUser = (): void => {
+  localStorage.removeItem(KEYS.CURRENT_SESSION);
+};
+
+export const getCurrentUser = (): User | null => {
+  const uid = localStorage.getItem(KEYS.CURRENT_SESSION);
+  if (!uid) return null;
+  const users = getUsers();
+  return users.find(u => u.id === uid) || null;
+};
+
+// --- FORMS MANAGEMENT ---
+
+// Migration: If user has old 'settings' key but no 'forms' key, create a form from it.
+export const migrateLegacySettings = (userId: string) => {
+  const formsKey = getUserKey(userId, 'forms');
+  const oldSettingsKey = getUserKey(userId, 'settings');
+  
+  const existingForms = localStorage.getItem(formsKey);
+  
+  if (!existingForms) {
+    const oldSettings = localStorage.getItem(oldSettingsKey);
+    const settingsToUse = oldSettings ? JSON.parse(oldSettings) : DEFAULT_SETTINGS;
+    
+    const initialForm: FormConfig = {
+      ...settingsToUse,
+      id: crypto.randomUUID(),
+      title: "Formulário Padrão (Migrado)",
+      createdAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem(formsKey, JSON.stringify([initialForm]));
+  }
+};
+
+export const getForms = (userId: string): FormConfig[] => {
+  const stored = localStorage.getItem(getUserKey(userId, 'forms'));
+  if (stored) return JSON.parse(stored);
+  
+  // Fallback if no forms exist (shouldn't happen due to registration/migration)
+  return []; 
+};
+
+export const getFormById = (userId: string, formId: string): FormConfig | undefined => {
+  const forms = getForms(userId);
+  return forms.find(f => f.id === formId);
+};
+
+export const createForm = (userId: string, title: string): FormConfig => {
+  const forms = getForms(userId);
+  const newForm: FormConfig = {
+    ...DEFAULT_SETTINGS,
+    id: crypto.randomUUID(),
+    title: title,
+    createdAt: new Date().toISOString()
+  };
+  
+  forms.push(newForm);
+  localStorage.setItem(getUserKey(userId, 'forms'), JSON.stringify(forms));
+  return newForm;
+};
+
+export const updateForm = (userId: string, updatedForm: FormConfig): void => {
+  const forms = getForms(userId);
+  const index = forms.findIndex(f => f.id === updatedForm.id);
+  if (index !== -1) {
+    forms[index] = updatedForm;
+    localStorage.setItem(getUserKey(userId, 'forms'), JSON.stringify(forms));
+  }
+};
+
+export const deleteForm = (userId: string, formId: string): void => {
+  // 1. Remove the form from the list
+  const forms = getForms(userId);
+  const updatedForms = forms.filter(f => f.id !== formId);
+  localStorage.setItem(getUserKey(userId, 'forms'), JSON.stringify(updatedForms));
+  
+  // 2. MIGRATE LEADS: Do not delete them. Move them to "consolidated" folder.
+  const allLeads = getAllLeads(userId);
+  const updatedLeads = allLeads.map(lead => {
+    if (lead.formId === formId) {
+      return { ...lead, formId: 'consolidated' };
+    }
+    return lead;
+  });
+  
+  localStorage.setItem(getUserKey(userId, 'leads'), JSON.stringify(updatedLeads));
+};
+
+// --- LEADS ---
+
+// Get ALL leads for a user (across all forms)
+export const getAllLeads = (userId: string): Lead[] => {
+  const stored = localStorage.getItem(getUserKey(userId, 'leads'));
+  let leads: Lead[] = stored ? JSON.parse(stored) : [];
+  
+  // Legacy migration for leads without formId
+  const forms = getForms(userId);
+  if (forms.length > 0 && leads.some(l => !l.formId)) {
+    const defaultFormId = forms[0].id;
+    leads = leads.map(l => l.formId ? l : { ...l, formId: defaultFormId });
+    localStorage.setItem(getUserKey(userId, 'leads'), JSON.stringify(leads));
+  }
+  
+  return leads;
+};
+
+export const saveLead = (userId: string, formId: string, leadData: Omit<Lead, 'id' | 'capturedAt' | 'formId'>): void => {
+  const currentLeads = getAllLeads(userId);
+  const newLead: Lead = {
+    ...leadData,
+    id: crypto.randomUUID(),
+    formId: formId,
+    capturedAt: new Date().toISOString()
+  };
+  const updatedLeads = [newLead, ...currentLeads];
+  localStorage.setItem(getUserKey(userId, 'leads'), JSON.stringify(updatedLeads));
+};
+
+export const updateLead = (userId: string, updatedLead: Lead): void => {
+  const currentLeads = getAllLeads(userId);
+  const index = currentLeads.findIndex(l => l.id === updatedLead.id);
+  if (index !== -1) {
+    currentLeads[index] = updatedLead;
+    localStorage.setItem(getUserKey(userId, 'leads'), JSON.stringify(currentLeads));
+  }
+};
+
+export const deleteLead = (userId: string, leadId: string): void => {
+  const currentLeads = getAllLeads(userId);
+  const filteredLeads = currentLeads.filter(l => l.id !== leadId);
+  localStorage.setItem(getUserKey(userId, 'leads'), JSON.stringify(filteredLeads));
+};
+
+export const deleteMultipleLeads = (userId: string, leadIds: string[]): void => {
+  const currentLeads = getAllLeads(userId);
+  const filteredLeads = currentLeads.filter(l => !leadIds.includes(l.id));
+  localStorage.setItem(getUserKey(userId, 'leads'), JSON.stringify(filteredLeads));
+};
+
+// --- INITIALIZATION ---
+
+export const initializeStorage = () => {
+  const users = getUsers();
+  const adminEmail = "doutortao@gmail.com.br";
+  
+  // Seed admin if not exists
+  if (!users.find(u => u.email === adminEmail)) {
+    registerUser("Administrador", adminEmail, "admin123");
+    console.log("Admin user seeded.");
+  }
+};
