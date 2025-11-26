@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PublicPage } from './components/PublicPage';
 import { AdminPanel } from './components/AdminPanel';
-import { ADMIN_CREDENTIALS, SYSTEM_CONFIG } from './constants';
+import { SYSTEM_CONFIG } from './constants';
 import * as storage from './services/storageService';
 import { AppSettings, Lead, User, FormConfig } from './types';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
@@ -222,7 +222,7 @@ const App: React.FC = () => {
                   required={mode === 'register'}
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full bg-white text-gray-900 p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             )}
@@ -233,7 +233,7 @@ const App: React.FC = () => {
                 required
                 value={formData.email}
                 onChange={e => setFormData({...formData, email: e.target.value})}
-                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 w-full bg-white text-gray-900 p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <div>
@@ -243,7 +243,7 @@ const App: React.FC = () => {
                 required
                 value={formData.password}
                 onChange={e => setFormData({...formData, password: e.target.value})}
-                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 w-full bg-white text-gray-900 p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}

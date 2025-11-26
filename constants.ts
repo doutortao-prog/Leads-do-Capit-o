@@ -18,8 +18,3 @@ export const DEFAULT_SETTINGS: AppSettings = {
   redirectUrl: "https://google.com",
   fileName: "ebook-estrategico.pdf"
 };
-
-export const ADMIN_CREDENTIALS = {
-  username: "admin",
-  password: "admin123"
-};

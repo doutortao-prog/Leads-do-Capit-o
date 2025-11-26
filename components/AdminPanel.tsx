@@ -97,6 +97,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [showDataWarning, setShowDataWarning] = useState(true);
 
   // Table State
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
@@ -586,6 +587,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </header>
 
+            {/* Local Storage Warning */}
+            {showDataWarning && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg shadow-sm flex justify-between items-start">
+                 <div className="flex gap-3">
+                   <Info className="text-yellow-600 shrink-0 mt-0.5" />
+                   <div>
+                     <p className="font-bold text-yellow-700 text-sm">Atenção: Modo Local</p>
+                     <p className="text-yellow-600 text-sm">
+                       Este aplicativo armazena dados no seu navegador (LocalStorage). 
+                       Se você limpar o cache ou trocar de dispositivo, os dados podem ser perdidos. 
+                       Recomendamos exportar seus leads frequentemente.
+                     </p>
+                   </div>
+                 </div>
+                 <button onClick={() => setShowDataWarning(false)} className="text-yellow-500 hover:text-yellow-700">
+                    <X size={16} />
+                 </button>
+              </div>
+            )}
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -908,7 +929,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text" 
                     value={activeForm?.title || ''} 
                     onChange={e => activeForm && onUpdateForm({...activeForm, title: e.target.value})}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
+                    className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
                   />
                   <p className="text-xs text-gray-400 mt-1">Este nome aparece apenas no seu painel.</p>
                 </div>
@@ -918,7 +939,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text" 
                     value={localSettings.headline} 
                     onChange={e => setLocalSettings({...localSettings, headline: e.target.value})}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
+                    className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
                   />
                 </div>
                 <div>
@@ -927,7 +948,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     rows={3}
                     value={localSettings.subheadline} 
                     onChange={e => setLocalSettings({...localSettings, subheadline: e.target.value})}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
+                    className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
                   />
                 </div>
                 <div>
@@ -936,7 +957,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text" 
                     value={localSettings.ctaText} 
                     onChange={e => setLocalSettings({...localSettings, ctaText: e.target.value})}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
+                    className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border" 
                   />
                 </div>
               </div>
@@ -975,7 +996,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             type="text" 
                             value={localSettings.heroImageUrl} 
                             onChange={e => setLocalSettings({...localSettings, heroImageUrl: e.target.value})}
-                            className="w-full text-sm border-gray-300 rounded-lg shadow-sm p-2 border" 
+                            className="w-full bg-white text-gray-900 text-sm border-gray-300 rounded-lg shadow-sm p-2 border" 
                           />
                        </div>
                        {/* Helper Text */}
@@ -1011,7 +1032,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               type="text" 
                               value={localSettings.logoUrl} 
                               onChange={e => setLocalSettings({...localSettings,logoUrl: e.target.value})}
-                              className="flex-1 text-sm border-gray-300 rounded-lg shadow-sm p-2 border" 
+                              className="flex-1 bg-white text-gray-900 text-sm border-gray-300 rounded-lg shadow-sm p-2 border" 
                             />
                          </div>
                        </div>
@@ -1109,7 +1130,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text"
                     value={localSettings.redirectUrl.replace(/^https?:\/\//, '')}
                     onChange={(e) => setLocalSettings({...localSettings, redirectUrl: `https://${e.target.value}`})}
-                    className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300 p-2 border"
+                    className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full bg-white text-gray-900 rounded-none rounded-r-md sm:text-sm border-gray-300 p-2 border"
                     placeholder="www.seusite.com/obrigado"
                   />
                 </div>
@@ -1163,7 +1184,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input 
                   required
                   type="text" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900"
                   value={modalForm.name}
                   onChange={e => setModalForm({...modalForm, name: e.target.value})}
                 />
@@ -1173,7 +1194,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input 
                   required
                   type="email" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900"
                   value={modalForm.email}
                   onChange={e => setModalForm({...modalForm, email: e.target.value})}
                 />
@@ -1183,7 +1204,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input 
                   required
                   type="tel" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900"
                   value={modalForm.whatsapp}
                   onChange={e => setModalForm({...modalForm, whatsapp: e.target.value})}
                 />
@@ -1225,7 +1246,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   required
                   type="text" 
                   placeholder="Ex: E-book de Verão 2024"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mb-4"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mb-4 bg-white text-gray-900"
                   value={newFormName}
                   onChange={e => setNewFormName(e.target.value)}
                 />
@@ -1261,7 +1282,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   required
                   type="text" 
                   placeholder="EXCLUIR"
-                  className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 mb-4"
+                  className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 mb-4 bg-white text-gray-900"
                   value={deleteConfirmation}
                   onChange={e => setDeleteConfirmation(e.target.value)}
                 />
